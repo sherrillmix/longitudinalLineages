@@ -24,4 +24,4 @@ dat$zip2<-substring(sub(' +','',sprintf('%05d',as.numeric(sub('[^0-9]+','',sub('
 countTab<-tapply(rep(1,nrow(dat)),list(dat$lineage,factor(dat$weekId,levels=1:max(dat$weekId)),dat$source),sum)
 countTab[is.na(countTab)]<-0
 
-dnar::withAs(xx=dat[dat$zip2 %in% c('08','17','19'),],table(xx$lineage,xx$weekId,xx$zip2))
+#dnar::withAs(xx=dat[dat$zip2 %in% c('08','17','19'),],table(xx$lineage,xx$weekId,xx$zip2))
