@@ -1,4 +1,4 @@
-runStan<-function(countTab,mod,iter=2000){
+runStan<-function(countTab,mod,iter=2000,chains=50){
   stan_sample <- rstan::sampling(
     mod,
     data=list(
@@ -7,7 +7,7 @@ runStan<-function(countTab,mod,iter=2000){
       nLineage=nrow(countTab)
     ),
     iter=iter,
-    chains=50,
+    chains=chains,
     control=list(max_treedepth=15),
   )
   return(stan_sample)
