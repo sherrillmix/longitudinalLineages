@@ -22,9 +22,9 @@ abundantLineages<-names(lineageTab)[lineageTab>10&names(lineageTab) %in% names(c
 dat$lineage<-ifelse(dat$pango_lineage %in% abundantLineages,dat$pango_lineage,'Other')
 #dat$source<-ifelse(dat$rationale %in% c('asymptomatic','random'),'random',ifelse(dat$rationale=='hospitalized','hospitalized',ifelse(grepl('vaccine breakthrough',dat$rationale),'vaccine',ifelse(dat$rationale=='s drop','s drop','other'))))
 dat$source<-ifelse(dat$rationale %in% c('asymptomatic','random','hospitalized','random; s drop'),'random',ifelse(grepl('vaccine breakthrough',dat$rationale),'vaccine',ifelse(dat$rationale=='s drop','s drop','other')))
+dat$zip2<-substring(sub(' +','',sprintf('%05d',as.numeric(sub('[^0-9]+','',sub('-.*','',dat$zip))))),1,2)
 countTab<-tapply(rep(1,nrow(dat)),list(dat$lineage,factor(dat$weekId,levels=1:max(dat$weekId)),dat$source),sum)
 countTab[is.na(countTab)]<-0
-dat$zip2<-substring(sub(' +','',sprintf('%05d',as.numeric(sub('[^0-9]+','',sub('-.*','',dat$zip))))),1,2)
 
 mod <- rstan::stan_model("model.stan")
 if(!exists('stan_sample'))stan_sample<-runStan(countTab[,,'random'],mod)
@@ -33,12 +33,37 @@ pdf('bayesTestNewData.pdf',width=6,height=6)
 dev.off()
 
 
+modFlat <- rstan::stan_model("model_source_flat.stan")
+if(!exists('stan_sample3'))stan_sample3<-runStan2(countTab[,,'random'],countTab[,,'s drop'],countTab[,,'vaccine'],modFlat,30000)
 
 mod2 <- rstan::stan_model("model_source.stan")
 #runStan2<-function(countTab,hospitalTab,dropTab,vaccineTab,mod,iter=2000){
 if(!exists('stan_sample2'))stan_sample2<-runStan2(countTab[,,'random'],countTab[,,'s drop'],countTab[,,'vaccine'],mod2,30000)
-meanLowUp<-calcCredInt(stan_sample2,rownames(countTab))
-dense<-calcDensity(stan_sample2,rownames(countTab))
+meanLowUp<-calcCredInt(stan_sample2,names=rownames(countTab))
+dense<-calcDensity(stan_sample2,names=rownames(countTab))
+
+pdf('bayesTestData.pdf',width=7,height=6)
+  layout(matrix(c(1,0,2,0,3,0),ncol=1),height=c(1,.1,1,.1,1,.2))
+  par(mar=c(3,3,2,2),tcl=-.2,mgp=c(2,.3,0))
+  plotBars(countTab[,,'random'],baseDate,cols,showLegend=FALSE)
+  title(main='"Random" population',adj=.45,line=1)
+  plotBars(countTab[,,'s drop'],baseDate,cols,showLegend=FALSE)
+  title(main='S dropout',adj=.45,line=1)
+  plotBars(countTab[,,'vaccine'],baseDate,cols,showLegend=FALSE)
+  title(main='Vaccine breakthrough',adj=.45,line=1)
+  legend('bottomleft',rownames(countTab),fill=cols[rownames(countTab)],inset=c(.1,-.6),ncol=4,xpd=NA,cex=.8)
+dev.off()
+
+
+pdf('bayesTestDataAndFit.pdf',width=7,height=6)
+  layout(matrix(c(1,0,2,0),ncol=1),height=c(1,.1,1,.27))
+  par(mar=c(3,3,2,2),tcl=-.2,mgp=c(2,.3,0))
+  plotBars(meanLowUp$mean,baseDate,cols,showLegend=FALSE,showSum=FALSE)
+  title(main='Predicted proportions data',adj=.45)
+  plotBars(countTab[,,'random'],baseDate,cols,showLegend=FALSE)
+  title(main='"Random" population',adj=.45,line=1)
+  legend('bottomleft',rownames(countTab),fill=cols[rownames(countTab)],inset=c(.1,-.55),ncol=4,xpd=NA,cex=.8)
+dev.off()
 
 pdf('bayesTestProportions.pdf',width=7,height=10)
   par(mar=c(3,3,.5,3),tcl=-.2,mgp=c(2,.3,0))
@@ -72,7 +97,18 @@ pdf('bayesTestEffects.pdf',width=8,height=7)
   plotIndivDense(dense$vaccine,cols,xlim=c(1e-2,1e2),ylab='Fold change in odds of appearing in vaccine breakthrough set')
 dev.off()
 
+pdf('bayesTestProportionsMulti.pdf',width=7,height=4)
+  par(mar=c(3,3,.5,3),tcl=-.2,mgp=c(2,.3,0))
+  plotMeanUpperLower(meanLowUp[[1]],meanLowUp[[2]],meanLowUp[[3]],countTab[,,'random'],baseDate,cols)
+dev.off()
 
 
-table(substring(,1,2))
-sort(unique(dat$zip))
+
+mat<-as.matrix(stan_sample2)
+zzz<-t(apply(mat[,grepl('dropChange',colnames(mat))],2,function(xx)c(mean(xx),quantile(xx,c(.025,.975)))))
+print(round(t(t(apply(mat[,grepl('dropChange',colnames(mat))],2,function(xx)c(mean(xx<0))))),2),row.names=FALSE)
+print(round(t(t(apply(mat[,grepl('vaccineChange',colnames(mat))],2,function(xx)c(mean(xx<0))))),2),row.names=FALSE)
+rownames(zzz)<-rownames(countTab)
+round(exp(zzz),1)
+
+dnar::withAs(xx=dat[dat$zip2 %in% c('08','17','19'),],table(xx$lineage,xx$weekId,xx$zip2))
