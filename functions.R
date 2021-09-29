@@ -1,4 +1,4 @@
-runStan<-function(countTab,mod,iter=2000,chains=50){
+runStan<-function(countTab,mod,iter=2000){
   stan_sample <- rstan::sampling(
     mod,
     data=list(
@@ -7,7 +7,7 @@ runStan<-function(countTab,mod,iter=2000,chains=50){
       nLineage=nrow(countTab)
     ),
     iter=iter,
-    chains=chains,
+    chains=50,
     control=list(max_treedepth=15),
   )
   return(stan_sample)
@@ -86,7 +86,7 @@ runStan2<-function(countTab,dropTab,vaccineTab,mod,iter=2000){#,hospitalTab
     ),
     iter=iter,
     chains=50,
-    thin=3,
+    thin=2,
     control=list(max_treedepth=15),
     pars=c('means','propsDrop','propsVaccine'),
     include=FALSE
@@ -94,7 +94,7 @@ runStan2<-function(countTab,dropTab,vaccineTab,mod,iter=2000){#,hospitalTab
   return(stan_sample)
 }
 
-plotIndivStan<-function(means,upper,lower,countTab,baseDate,cols=NULL){
+plotIndivStan<-function(means,upper,lower,countTab,baseDate,cols=NULL,nCol=5){
   propTab<-apply(countTab,2,function(xx)xx/sum(xx))
   counts<-apply(countTab,2,sum)
   barCol<-rev(grey.colors(max(counts)+1))
@@ -109,7 +109,7 @@ plotIndivStan<-function(means,upper,lower,countTab,baseDate,cols=NULL){
     if(ii > nrow(countTab)-nCol) dnar::slantAxis(1,(prettyDates-baseDate)/7+1,sub('  +',' ',format(prettyDates,'%b %e %Y')),cex=.8,tcl=-.2,location=.5)
     else axis(1,(prettyDates-baseDate)/7+1,rep('',length(prettyDates)),tcl=-.2)
     if(ii==(2*nCol+1))mtext('Estimated proportion',2,line=2.2,at=1)
-    title(main=rownames(countTab)[ii],line=-1.5,cex=.9)
+    title(main=rownames(countTab)[ii],line=-2,cex=.9)
     rect(1:ncol(propTab)-.5,0,1:ncol(propTab)+.5,propTab[ii,],col=barCol[counts+1],border=NA)
     polygon(c(1:ncol(means),ncol(means):1),c(lower[ii,],rev(upper[ii,])),border=NA,col=sprintf('%s77',cols[rownames(countTab)[ii]]))
     lines(1:ncol(means),means[ii,],col=cols[rownames(countTab)[ii]])
@@ -124,13 +124,14 @@ plotIndivDense<-function(dense,cols=NULL,xlim=range(exp(dense[[1]]$x)),ylab='Fol
   #https://sashamaps.net/docs/resources/20-colors/
   yMax<-max(sapply(dense,function(xx)max(xx$y)))
   for(ii in 1:length(dense)){
+    print(names(dense)[ii])
     plot(1,1,type='n',xlim=xlim,ylim=c(0,yMax),las=1,xlab='',bty='n',xaxt='n',yaxs='i',xaxs='i',yaxt='n',xaxt='n',log='x')
     polygon(exp(dense[[ii]]$x),dense[[ii]]$y,col=cols[names(dense)[ii]])
     title(main=names(dense)[ii],line=0,cex=.9)
     dnar::logAxis(1,axisVals=c(-2,0,2,4))
     abline(v=1,lty=2)
+    #if(ii==(2*nCol+1))mtext(2,line=2.2,at=par('usr')[4])
   }
-    if(ii==(2*nCol+1))mtext(2,line=2.2,at=par('usr')[4])
   text(grconvertX(.015,'ndc','user'),grconvertY(.5,'ndc','user'),'Estimated posterior probability',xpd=NA,cex=1.2,srt=90)
   text(grconvertX(.5,'ndc','user'),grconvertY(.015,'ndc','user'),ylab,xpd=NA,cex=1.2)
 }
@@ -175,4 +176,68 @@ plotStan<-function(stan_sample,countTab,baseDate,cols=NULL){
   dnar::slantAxis(3,which(counts>0),counts[counts>0],location=.4,cex=.6,axisArgs=list(lwd=NA,lwd.tick=1),textOffsets=-.1)
   legend('bottom',names(cols),fill=cols,inset=-.33,ncol=ceiling(nrow(countTab)/2),xpd=NA,cex=.8)
   invisible(return(list(means,lower,upper)))
+}
+
+runStan3<-function(countTab,dropTab,vaccineTab,greek,mod,iter=2000){
+  #should do more double checking
+  if(length(greek)!=nrow(countTab))stop('Sublineage groupings not same length as count table')
+  abundantGreek<-names(table(greek)[table(greek)>1])
+  greekIds<-structure(1:(length(abundantGreek)+1),.Names=c('__BASE__',abundantGreek))
+  dat<-list(
+    counts=countTab,
+    drop=dropTab,
+    vaccine=vaccineTab,
+    nTime=ncol(countTab),
+    nLineage=nrow(countTab),
+    nSublineageGroup=max(greekIds),
+    sublineageGroup=greekIds[ifelse(greek %in% names(greekIds),greek,'__BASE__')]
+  )
+  stan_sample <- rstan::sampling(
+    mod,
+    data=dat,
+    iter=iter,
+    chains=50,
+    thin=2,
+    control=list(max_treedepth=15),
+    pars=c('means'),
+    include=FALSE
+  )
+  return(list('stan'=stan_sample,'dat'=dat,'greek'=greekIds,'lineage'=rownames(countTab)))
+}
+
+calcDensity2<-function(stan_sample,names=NULL,greekNames=NULL){
+  mat<-as.matrix(stan_sample)
+  drops<-mat[,grepl('^dropChange\\[',colnames(mat))]
+  vaccines<-mat[,grepl('^vaccineChangeWithSub\\[',colnames(mat))]
+  greeks<-mat[,grepl('^vaccineChange\\[',colnames(mat))]
+  minMax<-range(cbind(drops,vaccines,greeks))
+  vaccineDensity<-apply(vaccines,2,density,from=minMax[1],to=minMax[2])
+  dropDensity<-apply(drops,2,density,from=minMax[1],to=minMax[2])
+  greekDensity<-apply(greeks,2,density,from=minMax[1],to=minMax[2])
+  names(vaccineDensity)<-names(dropDensity)<-names
+  names(greekDensity)<-greekNames
+  return(list('vaccine'=vaccineDensity,'drop'=dropDensity,'greek'=greekDensity))
+}
+
+runMutationStan<-function(countTab,dropTab,vaccineTab,mod,nChain=50,nIter=2000){
+  dat<-list(
+    counts=countTab[1,],
+    nCounts=apply(countTab,2,sum),
+    drop=dropTab[1,],
+    nDrop=apply(dropTab,2,sum),
+    vaccine=vaccineTab[1,],
+    nVaccine=apply(vaccineTab,2,sum),
+    nTime=ncol(countTab)
+  )
+  stan_sample <- rstan::sampling(
+    mod,
+    data=dat,
+    iter=nIter,
+    chains=nChain,
+    thin=2,
+    control=list(max_treedepth=15)
+    #pars=c('means'),
+    #include=FALSE
+  )
+  return(list('stan'=stan_sample,'dat'=dat,'mod'=mod))
 }
