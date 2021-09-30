@@ -241,3 +241,6 @@ runMutationStan<-function(countTab,dropTab,vaccineTab,mod,nChain=50,nIter=2000){
   )
   return(list('stan'=stan_sample,'dat'=dat,'mod'=mod))
 }
+
+logit<-function(xx)log(xx)-log(1-xx)
+invLogit<-function(xx)1/(1+exp(-xx))
