@@ -10,7 +10,7 @@ data {
 
 parameters{
   vector[nLineage-1] meansWeek1;
-  matrix[nLineage-1,nTime-1] changes;
+  matrix[nLineage,nTime-1] changes;
   real<lower=0> changeSigma;
   vector[nLineage] vaccineChange;
   vector[nSublineageGroup-1] vaccineChangeGroup;
@@ -29,8 +29,7 @@ transformed parameters{
   means[1,1]=0.0;
   means[2:nLineage,1]=meansWeek1;
   for(ii in 2:nTime){
-    means[1,ii]=0.0;
-    means[2:nLineage,ii]=means[2:nLineage,ii-1]+changes[,ii-1]*changeSigma;
+    means[,ii]=means[,ii-1]+changes[,ii-1]*changeSigma;
   }
   for(ii in 1:nTime){
     props[,ii]=exp(means[,ii])/sum(exp(means[,ii]));
