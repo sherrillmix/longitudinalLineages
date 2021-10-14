@@ -13,9 +13,9 @@ runStan<-function(countTab,mod,iter=2000){
   return(stan_sample)
 }
 
-calcCredInt<-function(stan_sample,quants=c(.025,.975),names=NULL){
+calcCredInt<-function(stan_sample,quants=c(.025,.975),names=NULL,colPattern='^props\\['){
   mat<-as.matrix(stan_sample)
-  props<-mat[,grepl('^props\\[',colnames(mat))]
+  props<-mat[,grepl(colPattern,colnames(mat))]
   meanLowerUpper<-apply(props,2,meanCrI,quants)
   convertToMat<-function(xx){
     row<-as.numeric(sub('[^0-9]+([0-9]+),[0-9]+.*','\\1',names(xx)))
@@ -94,7 +94,7 @@ runStan2<-function(countTab,dropTab,vaccineTab,mod,iter=2000){#,hospitalTab
   return(stan_sample)
 }
 
-plotIndivStan<-function(means,upper,lower,countTab,baseDate,cols=NULL,nCol=5){
+plotIndivStan<-function(means,upper,lower,countTab,baseDate,cols=NULL,nCol=5,additional=NULL){
   propTab<-apply(countTab,2,function(xx)xx/sum(xx))
   counts<-apply(countTab,2,sum)
   barCol<-rev(grey.colors(max(counts)+1))
@@ -113,6 +113,10 @@ plotIndivStan<-function(means,upper,lower,countTab,baseDate,cols=NULL,nCol=5){
     rect(1:ncol(propTab)-.5,0,1:ncol(propTab)+.5,propTab[ii,],col=barCol[counts+1],border=NA)
     polygon(c(1:ncol(means),ncol(means):1),c(lower[ii,],rev(upper[ii,])),border=NA,col=sprintf('%s77',cols[rownames(countTab)[ii]]))
     lines(1:ncol(means),means[ii,],col=cols[rownames(countTab)[ii]])
+    if(!is.null(additional)){
+      lines(1:ncol(additional$mean),additional$mean[ii,],col=cols[rownames(countTab)[ii]],lty=2)
+      polygon(c(1:ncol(additional$mean),ncol(additional$mean):1),c(additional$lower[ii,],rev(additional$upper[ii,])),border=NA,col=sprintf('%s66',cols[rownames(countTab)[ii]]))
+    }
     box()
   }
   abline(h=0)
