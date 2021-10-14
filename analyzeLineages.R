@@ -106,12 +106,12 @@ out<-formatC(signif(strainTab[,1:3],2))
 out<-sub('^([0-9])$','\\1.0',out)
 colnames(out)<-c("Mean","Lower 95% CrI","Upper 95% CrI")
 out<-out[c(rownames(out)[!rownames(out) %in% greekOrder],greekOrder),]
-write.csv(out,'out/strainFoldVaccineEnrichment.csv',quote=FALSE)
+write.csv(out,'out/vaccineEnrichment.csv',quote=FALSE)
 out<-formatC(signif(dropTab[,1:3],2))
 out<-sub('^([0-9])$','\\1.0',out)
 colnames(out)<-c("Mean","Lower 95% CrI","Upper 95% CrI")
-write.csv(out[greekOrder,],'out/dropFoldVaccineEnrichment.csv',quote=FALSE)
+write.csv(out[greekOrder,],'out/sDropEnrichment.csv',quote=FALSE)
 out<-meanLowUp$mean
 colnames(out)<-as.character(baseDate+(1:ncol(out)-1)*7)
-write.csv(t(out),'out/variantProps.csv')
+write.csv(t(out),'out/lineageProps.csv')
 
