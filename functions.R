@@ -91,7 +91,7 @@ plotIndivDense<-function(dense,cols=NULL,xlim=range(exp(dense[[1]]$x)),ylab='Fol
 }
 
 
-runStan<-function(countTab,dropTab,vaccineTab,greek,mod,iter=2000){
+runStan<-function(countTab,dropTab,vaccineTab,greek,mod,iter=2000,nChains=50){
   if(length(greek)!=nrow(countTab))stop('Sublineage groupings not same length as count table')
   abundantGreek<-names(table(greek)[table(greek)>1])
   greekIds<-structure(1:(length(abundantGreek)+1),.Names=c('__BASE__',abundantGreek))
@@ -108,7 +108,7 @@ runStan<-function(countTab,dropTab,vaccineTab,greek,mod,iter=2000){
     mod,
     data=dat,
     iter=iter,
-    chains=50,
+    chains=nChains,
     thin=2,
     control=list(max_treedepth=15),
     pars=c('means'),

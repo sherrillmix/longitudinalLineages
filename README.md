@@ -2,7 +2,7 @@
 
 To regenerate the analysis, run `source('analyzeLineages.R')` in R.
 
-The code depends on the R package `rstan` available from CRAN (`install.packages('rstan')`) and was run in R version 4.1.1 with `rstan` version 2.21.2.
+The code depends on the R package `rstan` available from CRAN (`install.packages('rstan')`) and was run in R version 4.1.1 with `rstan` version 2.21.2. Note that the Stan model will probably take a few hours to run and is set to run 50 chains by default (you may want to adjust the nChains variable when running on computers with fewer cores).
 
 This code should generate analysis result files in the `out` directory. Example output is available in the `exampleOut` directory with files:
  * countsPredictions.pdf:  Longitudinal stacked bar graphs depicting the SARS-CoV-2 variants present in surveillance, S gene target failure and vaccine breakthrough samples from the Delaware Valley, shown as the proportion of genomes classified as each variant lineage within each week. The numbers of genomes sampled each week are shown above the graph. Variants are colored according to the key at the bottom of the figure. The final plot shows the proportions of variants estimated from the surveillance count data using Bayesian autoregressive moving average multinomial logistic regression.

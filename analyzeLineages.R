@@ -3,6 +3,7 @@ source('functions.R')
 options(mc.cores = parallel::detectCores())
 rstan::rstan_options(auto_write = TRUE)
 set.seed(12345)
+nChains<-50
 
 
 #https://www.cdc.gov/coronavirus/2019-ncov/variants/variant-info.html
@@ -38,7 +39,7 @@ countTab[is.na(countTab)]<-0
 greek<-structure(ifelse(rownames(countTab) %in% names(greekLookup),greekLookup[rownames(countTab)],'Other'),.Names=rownames(countTab))
 
 mod <- rstan::stan_model("model_sourceVariants.stan")
-if(!exists('stan_sample'))stan_sample<-runStan(countTab[,,'surveillance'],countTab[,,'s drop'],countTab[,,'vaccine breakthrough'],greek,mod,3000)
+if(!exists('stan_sample'))stan_sample<-runStan(countTab[,,'surveillance'],countTab[,,'s drop'],countTab[,,'vaccine breakthrough'],greek,mod,3000,nChains=nChains)
 
 meanLowUp<-calcCredInt(stan_sample$stan,names=rownames(countTab))
 dense<-calcDensity(stan_sample$stan,names=rownames(countTab),greekNames=names(stan_sample$greek))
