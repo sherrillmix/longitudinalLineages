@@ -204,6 +204,21 @@ slantAxis<-function(side,at,labels=at,srt=ifelse(side %in% c(1,4),-45,45),locati
   return(invisible(NULL))
 }
 
+convertLineToUser<-function(line,axis=1){
+  if(!(axis %in% 1:4))stop(simpleError('Undefined axis'))
+  axisPair<-sort((c(axis-1,axis+1)%%4)+1)
+  isHeight<-(axis%%2)==1
+  isSecond<-axis>2
+  thisMar<-graphics::par('mar')[axis]
+  marWidth<-thisMar/sum(graphics::par('mar')[axisPair])*(graphics::par('fin')-graphics::par('pin'))[isHeight+1]
+  widthPerLine<-marWidth/thisMar
+  #find base line + add in if plot doesn't cover whole device e.g. graphics::par(mfrow=c(2,1))
+  base<-ifelse(isSecond,graphics::par('fin')[isHeight+1]-widthPerLine*thisMar,widthPerLine*thisMar) + graphics::par('fig')[1+isHeight*2]*graphics::par('din')[isHeight+1]
+  func<-if(isHeight)graphics::grconvertY else graphics::grconvertX
+  out<-func(base+line*widthPerLine*ifelse(isSecond,1,-1),'inches','user')
+  return(out)
+}
+
 logAxis<-function(side=2,exponent=TRUE,addExtra=!exponent,minorTcl=-.2,axisMin=-Inf,axisMax=Inf,offset=0,col.ticks='black',axisVals=NULL,...){
   if(side %in% c(2,4)) parX<-sort(graphics::par('usr')[3:4])
   else parX<-sort(graphics::par('usr')[1:2])

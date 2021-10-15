@@ -1,8 +1,8 @@
 # Analysis code for "SARS-CoV-2 variants associated with vaccine breakthrough in the Delaware Valley through summer 2021" 
 
-To regenerate the analysis, run `source('analyzeLineages.R')` in R.
+To regenerate the analysis, run `source('analyzeLineages.R')` in R. The Bayesian autoregressive moving average multinomial logistic regression model is set up in Stan in [model_sourceVariants.stan](model_sourceVariants.stan).
 
-The code depends on the R package `rstan` available from CRAN (`install.packages('rstan')`) and was run in R version 4.1.1 with `rstan` version 2.21.2. Note that the Stan model will probably take a few hours to run and is set to run 50 chains by default (you may want to adjust the nChains variable when running on computers with fewer cores).
+The code depends on the R package `rstan` available from CRAN (`install.packages('rstan')`) and was run in R version 4.1.1 with `rstan` version 2.21.2. The R package `lubridate` is also used for date processing.  Note that the Stan model will probably take a few hours to run and is set to run 50 chains by default (you may want to adjust the nChains variable when running on computers with fewer cores).
 
 This code should generate analysis result files in the `out` directory. Example output is available in the `exampleOut` directory with files:
  * countsPredictions.pdf:  Longitudinal stacked bar graphs depicting the SARS-CoV-2 variants present in surveillance, S gene target failure and vaccine breakthrough samples from the Delaware Valley, shown as the proportion of genomes classified as each variant lineage within each week. The numbers of genomes sampled each week are shown above the graph. Variants are colored according to the key at the bottom of the figure. The final plot shows the proportions of variants estimated from the surveillance count data using Bayesian autoregressive moving average multinomial logistic regression.
@@ -13,9 +13,9 @@ This code should generate analysis result files in the `out` directory. Example 
  ![Enrichment in S gene target failure samples](exampleOut/sDropEnrichment.png)
  * vaccineEnrichment.pdf: Estimated posterior probability densities for the enrichment of variants among vaccine breakthrough samples produced by Bayesian autoregressive moving average multinomial logistic regression. The x-axis shows the fold enrichment/depletion in the odds of a variant (labeled above each plot) appearing in the vaccine breakthrough set relative to the proportions estimated in the surveillance population and the y-axis shows the posterior probability. No enrichment (fold-change of 1) is indicated by the dashed vertical line. Increased density to the right indicates greater likelihood of inclusion among vaccine breakthrough samples, increased density to the left indicates decreased likelihood. Color coding indicates the variant queried with colors as in earlier figures.
  ![Enrichment in vaccine breakthrough samples](exampleOut/vaccineEnrichment.png)
- * vaccineEnrichment.csv: Estimated fold enrichment in odds of appearing in vaccine breakthrough samples for each SARS-CoV-2 lineage.
- * sDropEnrichment.csv: Estimated fold enrichment in odds of appearing in the spike gene target failure set for each SARS-CoV-2 lineage.
- * lineageProps.csv: Posterior mean estimates of the longitudinal proportions of SARS-CoV-2 lineages in the surveillance population.
+ * vaccineEnrichment.csv: Estimated fold enrichment in odds of appearing in vaccine breakthrough samples for each SARS-CoV-2 lineage. Each row represents a WHO grouping or SARS-CoV-2 lineage with columns giving the mean posterior estimate, lower boundary of the 95% credible interval and upper boundary of the 95% credible interval.
+ * sDropEnrichment.csv: Estimated fold enrichment in odds of appearing in the spike gene target failure set for each SARS-CoV-2 lineage. Each row represents a SARS-CoV-2 lineage with columns giving the mean posterior estimate, lower boundary of the 95% credible interval and upper boundary of the 95% credible interval.
+ * lineageProps.csv: Posterior mean estimates of the longitudinal proportions of SARS-CoV-2 lineages in the surveillance population. Each column represent a week of the study period (date given in header) and each row represent a SARS-CoV-2 lineage (first column gives Pangolin lineage).
 
 
 
